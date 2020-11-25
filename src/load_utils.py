@@ -1,28 +1,16 @@
+import miniaudio
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 import os
 import pathlib
 import pandas as pd
+
 pd.set_option('display.max_colwidth', 30)
 pd.set_option('display.width', 500)
 
-languages = """
-    es
-    fr
-    de
-""".split()
 
-splits = """
-    train
-    test
-    dev
-""".split()
 
-datadir = pathlib.Path("./common-voice/cv-corpus")
-
-langs = tuple(sorted(languages))
-lang2target = {lang: target for target, lang in enumerate(langs)}
-
-print("lang2target:", lang2target)
-print("langs:", langs)
 
 
 def tsv2df(lang="es", split="dev"):
@@ -46,6 +34,8 @@ metadf = construct_metadf(langs, splits)
 
 
 from itertools import combinations
+
+
 def list_joint_speakers(df):
     """ find joint speakers between splits
     """
@@ -78,7 +68,68 @@ def test_disjunction(df):
         print(f"train and dev have {len(traindev)} mutual speakers")
     if devtest != set():
         print(f"dev and test have {len(devtest)} mutual speakers")
+    print(f"{len(traintest & devtest)} speakers are common to all sets")
+
 
 test_disjunction(metadf)
 test_disjunction(tdf)
+
+
+tdf["dur"] = np.array([miniaudio.mp3_get_file_info(path).duration for path in tdf.path], np.float32)
+
+
+tdf.head()
+
+
+sns.set(rc={'figure.figsize': (8, 6)})
+ax = sns.countplot(
+    x="set",
+    order=splits,
+    hue="locale",
+    hue_order=langs,
+    data=tdf)
+ax.set_title("# of audio samples")
+plt.show()
+
+
+
+
+def plot_duration_distribution(data):
+    sns.set(rc={'figure.figsize': (8, 6)})
+    
+    ax = sns.boxplot(
+        x="set",
+        order=splits,
+        y="dur",
+        hue="locale",
+        hue_order=langs,
+        data=data)
+    ax.set_title("Median audio file duration in seconds")
+    plt.show()
+
+    ax = sns.barplot(
+        x="set",
+        order=splits,
+        y="dur",
+        hue="locale",
+        hue_order=langs,
+        data=data,
+        ci=None,
+        estimator=np.sum)
+    ax.set_title("Total amount of audio in seconds")
+    plt.show()
+
+
+plot_duration_distribution(tdf)
+
+
+
+groupby_lang = tdf[["locale", "dur"]].groupby("locale")
+    
+total_dur = groupby_lang.sum()
+target_lang = total_dur.idxmax()[0]
+print("target lang:", target_lang)
+print("total durations:")
+display(total_dur)
+
 
