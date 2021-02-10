@@ -1,3 +1,7 @@
 **/*.tar.gz
+work/
 common-voice/
 .vscode
+logs
+*.mp3
+*.mp4
