@@ -13,6 +13,7 @@ import tensorflow as tf
 import os
 import lidbox.data.steps as ds_steps
 import pandas as pd
+import miniaudio
 from src.data import load_metadf, splits, lang2target, target2lang
 from src.features import pipeline_from_metadata, assert_finite
 
@@ -67,7 +68,7 @@ def train(model_input_type="logmelspec"):
         ),
         # ckpt
         tf.keras.callbacks.ModelCheckpoint(
-            os.path.join(cachedir, "model", model.name),
+            os.path.join(cachedir, "model_aug", model.name),
             monitor='val_loss',
             save_weights_only=True,
             save_best_only=True,
@@ -111,7 +112,7 @@ def evaluate(test_ds, meta, model_input_type="logmelspec"):
     model = create_model(
         num_freq_bins=40, #20 if model_input_type == "mfcc" else 
         num_labels=len(lang2target))
-    _ = model.load_weights(os.path.join(cachedir, "model", model.name))
+    _ = model.load_weights(os.path.join(cachedir, "model_aug", model.name))
     utt2pred = predict_with_model(model, test_ds)
     #remove index name
     utt2pred.index.name= None
@@ -135,6 +136,7 @@ def evaluate(test_ds, meta, model_input_type="logmelspec"):
     return test_meta
 
 
+import scipy
 
 
 def read_mp3(path, resample_rate=16000):

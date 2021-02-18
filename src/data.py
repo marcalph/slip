@@ -24,6 +24,8 @@ languages = """
     es
     fr
     de
+    ar
+    ru
 """.split()
 
 splits = """
@@ -49,7 +51,7 @@ def tsv2df(datadir, lang, split):
     df["split"] = split.split(".")[0]
     print(split)
     if split=="train.tsv":
-        df = df.sample(30000)
+        df = df.sample(min(30000, len(df)))
     print(df.shape)
     return df
 

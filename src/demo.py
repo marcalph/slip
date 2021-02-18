@@ -122,7 +122,7 @@ generate_demo_vid("Euronews_es.mp3")
 import pyaudio
 import numpy as np
 import sounddevice as sd
-
+import audioop
 
 def play(signal, fs):
     sd.play(signal, fs)
@@ -135,9 +135,8 @@ CHUNK = 16000
 RECORD_SECONDS = 5
 WAVE_OUTPUT_FILENAME = "file.wav"
  
-audio = pyaudio.PyAudio()
- 
 # start Recording
+audio = pyaudio.PyAudio()
 stream = audio.open(format=FORMAT, channels=CHANNELS,
                 rate=RATE, input=True,
                 frames_per_buffer=CHUNK)
@@ -145,6 +144,7 @@ print("recording...")
 frames = []
 for i in range(0, int(RATE / CHUNK * 20)):
     data = stream.read(CHUNK)
+    vol = audioop.rms(data, 2)
     data = np.frombuffer(data, dtype=np.float32)
     frames.append(data)
     arr = sig2logspec(np.hstack(frames[-3:])).T
@@ -152,10 +152,69 @@ for i in range(0, int(RATE / CHUNK * 20)):
     idx = logit.argmax()
     probs = scipy.special.softmax(logit[0])
     pred = target2lang[idx]
-    print(f"{pred} {probs[idx]:.2%}")
+    print(f"{pred} {probs[idx]:.2%} {vol}")
 
 
 print("finished recording")
 stream.stop_stream()
 stream.close()
 audio.terminate()
+
+
+
+
+
+
+
+import pyaudio
+from urllib.request import urlopen
+import numpy as np
+import sounddevice as sd
+import scipy.signal
+url = "https://file-examples-com.github.io/uploads/2017/11/file_example_MP3_700KB.mp3"
+signal, resample_rate = librosa.load("file_example_MP3_700KB.mp3")
+u = urlopen(url)
+
+import miniaudio
+
+
+import librosa
+from src.features import plot_signal
+import matplotlib.pyplot as plt
+plot_signal(signal)
+plt.show()
+signal.max()
+
+f = miniaudio.mp3_read_file_f32("file_example_MP3_700KB.mp3")
+f.sample_rate
+f.nchannels
+
+f.samples
+
+play(signal, 16000)
+sd.stop()
+len(signal)
+873216/32000
+
+pyaud = pyaudio.PyAudio()
+srate=32000
+stream = pyaud.open(format = pyaud.get_format_from_width(1),
+                channels = 2,
+                rate = srate,
+                output = True)
+
+
+data = u.read(10000)
+data = np.frombuffer(data, dtype=np.float32)
+play(data, srate)
+
+len(data)
+
+
+while data:
+    stream.write(data)
+    data = u.read(8192)
+
+def play(signal, fs):
+    sd.play(signal, fs)
+
